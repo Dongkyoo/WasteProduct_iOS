@@ -16,7 +16,9 @@ target 'WasteProductiOS' do
   pod 'FirebaseUI/Facebook'
   pod 'FirebaseUI/Phone'
   pod 'Firebase/Analytics'
+  pod 'Firebase/Database'
   pod 'Firebase/DynamicLinks'
+  pod 'GoogleSignIn'
 
   target 'WasteProductiOSTests' do
     inherit! :search_paths

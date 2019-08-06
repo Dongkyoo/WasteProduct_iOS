@@ -9,15 +9,20 @@
 import UIKit
 import Firebase
 import FirebaseUI
+import GoogleSignIn
 
 class ViewController: UIViewController {
 
+    @IBOutlet weak var googleSignInButton: GIDSignInButton!
     @IBOutlet var signInWithEmailButton: UIButton!
     @IBOutlet var emailTextField: UITextField!
     @IBOutlet var signOutButton: UIButton!
     var link: String!
     
     override func viewDidLoad() {
+        GIDSignIn.sharedInstance()?.uiDelegate = self
+        GIDSignIn.sharedInstance()?.signInSilently()
+        
         NotificationCenter.default.addObserver(self, selector: #selector(didBecomActive), name: Notification.Name(rawValue: "applicationDidBecomeActive"), object: nil)
     }
     
@@ -55,6 +60,7 @@ class ViewController: UIViewController {
                     return
                 }
                 
+                UserDefaults.standard.set("Email", forKey: "LoginType")
                 self.signOutButton.isEnabled = true
             }
         }
@@ -89,16 +95,38 @@ class ViewController: UIViewController {
     }
     
     @IBAction func tapSignOut(_ sender: Any) {
-        do {
-            try Auth.auth().signOut()
-            UserDefaults.standard.set(nil, forKey: "Email")
-            UserDefaults.standard.set(nil, forKey: "Link")
-            
-            signInWithEmailButton.isEnabled = false
-            signOutButton.isEnabled = false
-        } catch let signOutError as NSError {
-            print("에러 signing out : \(signOutError.localizedDescription)")
+        if let loginType = UserDefaults.standard.value(forKey: "LoginType") as? String {
+            switch loginType {
+            case "Google":
+                GIDSignIn.sharedInstance()?.signOut()
+            case "Email":
+                do {
+                    try Auth.auth().signOut()
+                    UserDefaults.standard.set(nil, forKey: "Email")
+                    UserDefaults.standard.set(nil, forKey: "Link")
+                    
+                    signInWithEmailButton.isEnabled = false
+                    signOutButton.isEnabled = false
+                } catch let signOutError as NSError {
+                    print("에러 signing out : \(signOutError.localizedDescription)")
+                }
+            default:
+                return
+            }
         }
     }
 }
 
+extension ViewController: GIDSignInUIDelegate {
+    func sign(inWillDispatch signIn: GIDSignIn!, error: Error!) {
+        UserDefaults.standard.set("Google", forKey: "LoginType")
+    }
+    
+    func sign(_ signIn: GIDSignIn!, dismiss viewController: UIViewController!) {
+        self.dismiss(animated: true, completion: nil)
+    }
+    
+    func sign(_ signIn: GIDSignIn!, present viewController: UIViewController!) {
+        self.present(viewController, animated: true, completion: nil)
+    }
+}
